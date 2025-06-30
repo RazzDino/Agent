@@ -1,0 +1,166 @@
+{
+  "featurePersonaData": {
+    "features": [
+      {
+        "featureName": "Smart_Meter_Request__c",
+        "personas": [
+          {
+            "personaName": "Residential Customer (RC Demo User)",
+            "capability": "Request smart meter installation"
+          },
+          {
+            "personaName": "Utility Operations Manager (UOM Demo User)",
+            "capability": "Monitor installation requests"
+          },
+          {
+            "personaName": "Customer Support Agent (Agentforce)",
+            "capability": "Confirm installation and educate customer"
+          }
+        ]
+      },
+      {
+        "featureName": "Energy_Usage_Feed__c",
+        "personas": [
+          {
+            "personaName": "Residential Customer (RC Demo User)",
+            "capability": "View hourly energy usage"
+          },
+          {
+            "personaName": "Utility Operations Manager (UOM Demo User)",
+            "capability": "Monitor grid load and peak demand"
+          },
+          {
+            "personaName": "Customer Support Agent (Agentforce)",
+            "capability": "Analyze usage patterns"
+          }
+        ]
+      },
+      {
+        "featureName": "Energy_Report__c",
+        "personas": [
+          {
+            "personaName": "Residential Customer (RC Demo User)",
+            "capability": "Receive monthly energy report"
+          },
+          {
+            "personaName": "Utility Operations Manager (UOM Demo User)",
+            "capability": "Review audit outcomes"
+          },
+          {
+            "personaName": "Customer Support Agent (Agentforce)",
+            "capability": "Summarize reports for customer"
+          }
+        ]
+      },
+      {
+        "featureName": "Product_Recommendation__c",
+        "personas": [
+          {
+            "personaName": "Residential Customer (RC Demo User)",
+            "capability": "Receive product recommendations"
+          },
+          {
+            "personaName": "Utility Operations Manager (UOM Demo User)",
+            "capability": "Trigger TOU plan campaigns"
+          },
+          {
+            "personaName": "Customer Support Agent (Agentforce)",
+            "capability": "Suggest products based on usage"
+          }
+        ]
+      },
+      {
+        "featureName": "Interaction_Log__c",
+        "personas": [
+          {
+            "personaName": "Residential Customer (RC Demo User)",
+            "capability": "Log interactions with support"
+          },
+          {
+            "personaName": "Utility Operations Manager (UOM Demo User)",
+            "capability": "Review agent performance"
+          },
+          {
+            "personaName": "Customer Support Agent (Agentforce)",
+            "capability": "Log chat history"
+          }
+        ]
+      },
+      {
+        "featureName": "Order__c",
+        "personas": [
+          {
+            "personaName": "Residential Customer (RC Demo User)",
+            "capability": "Purchase smart thermostat"
+          },
+          {
+            "personaName": "Utility Operations Manager (UOM Demo User)",
+            "capability": "Monitor bulk orders"
+          },
+          {
+            "personaName": "Customer Support Agent (Agentforce)",
+            "capability": "Track product purchases"
+          }
+        ]
+      },
+      {
+        "featureName": "Email_Campaign__c",
+        "personas": [
+          {
+            "personaName": "Residential Customer (RC Demo User)",
+            "capability": "Receive personalized energy tips"
+          },
+          {
+            "personaName": "Utility Operations Manager (UOM Demo User)",
+            "capability": "Trigger email campaigns"
+          },
+          {
+            "personaName": "Customer Support Agent (Agentforce)",
+            "capability": "Send follow-up emails"
+          }
+        ]
+      }
+    ],
+    "personas": [
+      {
+        "personaName": "Residential Customer (RC Demo User)",
+        "description": "End customer who uses the utility services",
+        "features": [
+          "Smart_Meter_Request__c",
+          "Energy_Usage_Feed__c", 
+          "Energy_Report__c",
+          "Product_Recommendation__c",
+          "Interaction_Log__c",
+          "Order__c",
+          "Email_Campaign__c"
+        ]
+      },
+      {
+        "personaName": "Utility Operations Manager (UOM Demo User)",
+        "description": "Manager responsible for utility operations and monitoring",
+        "features": [
+          "Smart_Meter_Request__c",
+          "Energy_Usage_Feed__c",
+          "Energy_Report__c", 
+          "Product_Recommendation__c",
+          "Interaction_Log__c",
+          "Order__c",
+          "Email_Campaign__c"
+        ]
+      },
+      {
+        "personaName": "Customer Support Agent (Agentforce)",
+        "description": "Support agent who assists customers and manages interactions",
+        "features": [
+          "Smart_Meter_Request__c",
+          "Energy_Usage_Feed__c",
+          "Energy_Report__c",
+          "Product_Recommendation__c", 
+          "Interaction_Log__c",
+          "Order__c",
+          "Email_Campaign__c"
+        ]
+      }
+    ]
+  }
+} 
