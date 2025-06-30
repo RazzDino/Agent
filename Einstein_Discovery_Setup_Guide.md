@@ -24,7 +24,7 @@
   - API access enabled
 
 ### Data Requirements
-- **Minimum Records:** 500+ records (you have 1,000 ✅)
+- **Minimum Records:** 500+ records
 - **Data Quality:** Clean, consistent data with minimal missing values
 - **Target Variable:** One field to predict or analyze
 - **Features:** Multiple fields that influence the target
