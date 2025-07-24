@@ -1,4 +1,20 @@
-#### Required Fields for Energy_Report__c
+# Energy Bill Prediction - Technical Implementation Guide
+
+This guide provides detailed technical information for implementing the Energy Bill Prediction system with Einstein Discovery.
+
+## Table of Contents
+
+1. [Required Fields & Validation Rules](#required-fields--validation-rules)
+2. [Data Quality Assessment](#data-quality-assessment)
+3. [Model Training & Evaluation](#model-training--evaluation)
+4. [Deployment Configuration](#deployment-configuration)
+5. [Customer Experience Integration](#customer-experience-integration)
+6. [Monitoring & Maintenance](#monitoring--maintenance)
+7. [Troubleshooting](#troubleshooting)
+
+## Required Fields & Validation Rules
+
+### Energy_Report__c Field Configuration
 
 | Field Name | Field Type | Description | Required |
 |------------|------------|-------------|----------|
@@ -19,7 +35,8 @@
 | Top_Factor_2__c | Text(255) | Secondary contributing factor | No |
 | Top_Factor_3__c | Text(255) | Tertiary contributing factor | No |
 
-### 2.2 Create Validation Rules
+### Validation Rules
+
 #### High Bill Threshold Rule
 ```apex
 // Validation Rule: High_Bill_Threshold_Validation
@@ -173,208 +190,49 @@ ISNULL(Account__c)
 - **Reporting**: Enables customer-specific analysis
 - **Model Context**: Customer data provides important context for predictions
 
-## Einstein Discovery Setup
+## Data Quality Assessment
 
-### 3.1 Enable Einstein Discovery
+### Required Data Quality Checks
 
-1. **Navigate to Setup**
-   - Go to **Setup** > **Einstein Discovery** > **Einstein Discovery Settings**
+#### Completeness Check
+```sql
+SELECT COUNT(Id), 
+       COUNT(Monthly_Usage__c), 
+       COUNT(Peak_Usage__c),
+       COUNT(Off_Peak_Usage_kWh__c),
+       COUNT(Appliance_Count__c),
+       COUNT(Previous_Bill_Amount__c),
+       COUNT(Current_Bill_Amount__c)
+FROM Energy_Report__c
+WHERE Report_Date__c >= LAST_N_MONTHS:6
+```
 
-2. **Enable Einstein Discovery**
-   - Check "Enable Einstein Discovery"
-   - Click **Save**
-
-3. **Configure Data Sources**
-   - Go to **Setup** > **Einstein Discovery** > **Data Sources**
-   - Click **New Data Source**
-   - Select **Salesforce Objects**
-   - Choose **Energy_Report__c**
-
-### 3.2 Create Prediction Dataset
-
-1. **Navigate to Einstein Discovery**
-   - Go to **Einstein Discovery** in your app launcher
-   - Click **Create Dataset**
-
-2. **Select Data Source**
-   - Choose **Energy_Report__c** object
-   - Set date range for training data (recommend 6+ months)
-   - Click **Next**
-
-3. **Configure Dataset Settings**
-   - **Dataset Name**: "Energy Bill Prediction Dataset"
-   - **Description**: "Dataset for predicting high energy bills"
-   - **Refresh Schedule**: Weekly (recommended)
-   - Click **Create** 
-
-## Data Preparation
-
-### 4.1 Data Quality Assessment
-
-#### Required Data Quality Checks:
-
-1. **Completeness Check**
-   SELECT COUNT(Id), 
-          COUNT(Monthly_Usage__c), 
-          COUNT(Peak_Usage__c),
-          COUNT(Off_Peak_Usage_kWh__c),
-          COUNT(Appliance_Count__c),
-          COUNT(Previous_Bill_Amount__c),
-          COUNT(Current_Bill_Amount__c)
-   FROM Energy_Report__c
-   WHERE Report_Date__c >= LAST_N_MONTHS:6
-
-### 4.2 Data Cleaning Scripts
+### Data Cleaning Scripts
 
 #### Apex Class for Data Preparation
-```apex
-public class EnergyDataPreparation {
-    
-    public static void prepareTrainingData() {
-        // Update High_Bill_Flag__c based on threshold
-        List<Energy_Report__c> reports = [
-            SELECT Id, Current_Bill_Amount__c, Previous_Bill_Amount__c
-            FROM Energy_Report__c
-            WHERE High_Bill_Flag__c = null
-            AND Current_Bill_Amount__c != null
-            AND Previous_Bill_Amount__c != null
-        ];
-        
-        for(Energy_Report__c report : reports) {
-            // Flag as high bill if 25% higher than previous
-            report.High_Bill_Flag__c = (report.Current_Bill_Amount__c > 
-                (report.Previous_Bill_Amount__c * 1.25));
-        }
-        
-        update reports;
-    }
-    
-    public static void calculateWeatherImpact() {
-        // Calculate weather impact based on seasonal patterns
-        List<Energy_Report__c> reports = [
-            SELECT Id, Report_Date__c, Monthly_Usage__c
-            FROM Energy_Report__c
-            WHERE Weather_Impact__c = null
-        ];
-        
-        for(Energy_Report__c report : reports) {
-            // Simple weather impact calculation
-            // In production, integrate with weather API
-            Integer month = report.Report_Date__c.month();
-            if(month >= 6 && month <= 8) {
-                report.Weather_Impact__c = 80.0; // Summer months
-            } else if(month >= 12 || month <= 2) {
-                report.Weather_Impact__c = 70.0; // Winter months
-            } else {
-                report.Weather_Impact__c = 50.0; // Spring/Fall
-            }
-        }
-        
-        update reports;
-    }
-}
-```
-
-### 4.3 Create Test Data (If Needed)
+- **EnergyTrainingDataGenerator**
+- **ImprovedEnergyTestDataGenerator**
 
 ```apex
-public class EnergyTestDataGenerator {
-    
-    public static void generateTestData() {
-        List<Account> accounts = [SELECT Id FROM Account LIMIT 10];
-        List<Energy_Report__c> reports = new List<Energy_Report__c>();
-        
-        for(Account acc : accounts) {
-            for(Integer i = 0; i < 12; i++) {
-                Energy_Report__c report = new Energy_Report__c(
-                    Account__c = acc.Id,
-                    Report_Date__c = Date.today().addMonths(-i),
-                    Monthly_Usage__c = Math.random() * 1000 + 200,
-                    Peak_Usage__c = Math.random() * 600 + 100,
-                    Off_Peak_Usage_kWh__c = Math.random() * 400 + 100,
-                    Appliance_Count__c = Math.round(Math.random() * 15) + 5,
-                    Previous_Bill_Amount__c = Math.random() * 200 + 50,
-                    Current_Bill_Amount__c = Math.random() * 300 + 50,
-                    Recommendation_Adopted__c = Math.random() > 0.5
-                );
-                reports.add(report);
-            }
-        }
-        
-        insert reports;
-    }
-}
+// Execute Energy Test Data Generation
+// This script will create 1000 Energy Report records
+
+// Option 1: Generate 1000 records (10 accounts × 100 records each)
+System.debug('Starting Energy Test Data Generation...');
+ImprovedEnergyTestDataGenerator.generateTestData();
+
+// Option 2: Generate smaller test dataset (100 records)
+// ImprovedEnergyTestDataGenerator.generateSmallTestData();
+
+// Option 3: Clean up test data (uncomment if needed)
+// ImprovedEnergyTestDataGenerator.cleanupTestData();
+
+System.debug('Energy Test Data Generation completed!');
 ```
 
-## Model Training
+## Model Training & Evaluation
 
-### 5.1 Create Prediction Model
-
-1. **Navigate to Einstein Discovery**
-   - Go to **Einstein Discovery** > **Models**
-   - Click **Create Model**
-
-2. **Select Dataset**
-   - Choose your "Energy Bill Prediction Dataset"
-   - Click **Next**
-
-3. **Configure Prediction Target**
-   - **What to Predict**: `High_Bill_Flag__c`
-   - **Prediction Type**: Binary (Yes/No)
-   - **Positive Outcome**: True (High bill)
-   - **Negative Outcome**: False (Normal bill)
-   - Click **Next**
-
-4. **Select Predictor Fields**
-   - **Primary Fields**:
-     - `Monthly_Usage__c`
-     - `Peak_Usage__c`
-     - `Off_Peak_Usage_kWh__c`
-     - `Appliance_Count__c`
-     - `Previous_Bill_Amount__c`
-     - `Weather_Impact__c`
-     - `Recommendation_Adopted__c`
-   - **Exclude Fields**:
-     - `Current_Bill_Amount__c` (leakage)
-     - `Predicted_Bill_Amount__c`
-     - `Prediction_Confidence__c`
-   - Click **Next**
-
-5. **Configure Model Settings**
-   - **Model Name**: "Energy Bill Prediction Model"
-   - **Description**: "Predicts high energy bills based on usage patterns"
-   - **Training Data**: Last 6 months
-   - **Validation Method**: Time-based split
-   - Click **Create Model**
-
-### 5.2 Model Training Process
-
-1. **Data Splitting**
-   - Training Set: 70% of data
-   - Validation Set: 15% of data
-   - Test Set: 15% of data
-
-2. **Feature Engineering**
-   - Einstein automatically creates:
-     - Usage ratios (Peak/Total, Off-peak/Total)
-     - Month-over-month changes
-     - Seasonal patterns
-     - Usage trends
-
-3. **Model Selection**
-   - Einstein tests multiple algorithms:
-     - Random Forest
-     - Gradient Boosting
-     - Logistic Regression
-     - Neural Networks
-
-4. **Hyperparameter Tuning**
-   - Automatic optimization of model parameters
-   - Cross-validation to prevent overfitting
-
-### 5.3 Model Evaluation
-
-#### Key Metrics to Monitor:
+### Key Metrics to Monitor
 
 1. **Accuracy**: Should be > 80%
 2. **Precision**: Should be > 75%
@@ -382,7 +240,7 @@ public class EnergyTestDataGenerator {
 4. **F1-Score**: Should be > 0.75
 5. **AUC-ROC**: Should be > 0.80
 
-#### Model Scorecard Analysis:
+### Model Scorecard Analysis
 
 1. **Feature Importance**
    - Top factors influencing high bills
@@ -392,11 +250,11 @@ public class EnergyTestDataGenerator {
 2. **Insights Discovery**
    - Usage patterns correlation
    - Seasonal effects
-   - Behavioral factors 
+   - Behavioral factors
 
-## Model Deployment
+## Deployment Configuration
 
-### 6.1 Deploy Model to Production
+### Deploy Model to Production
 
 1. **Navigate to Model Details**
    - Go to your trained model
@@ -414,9 +272,9 @@ public class EnergyTestDataGenerator {
    - **Time**: 2:00 AM
    - **Timezone**: Your org's timezone
 
-### 6.2 Create Prediction Flow
+### Create Prediction Flow
 
-#### Flow Configuration:
+#### Flow Configuration
 
 1. **Navigate to Flow Builder**
    - Go to **Setup** > **Process Automation** > **Flow**
@@ -441,7 +299,7 @@ public class EnergyTestDataGenerator {
    - **True Path**: Send notification/alert
    - **False Path**: Continue normal process
 
-### 6.3 Create Apex Trigger for Real-time Predictions
+### Create Apex Trigger for Real-time Predictions
 
 ```apex
 trigger EnergyReportTrigger on Energy_Report__c (after insert, after update) {
@@ -470,7 +328,7 @@ trigger EnergyReportTrigger on Energy_Report__c (after insert, after update) {
 }
 ```
 
-#### Einstein Prediction Service Class:
+#### Einstein Prediction Service Class
 
 ```apex
 public class EnergyPredictionService {
@@ -524,11 +382,11 @@ public class EnergyPredictionService {
 }
 ```
 
-## Integration with Customer Experience
+## Customer Experience Integration
 
-### 7.1 Create Lightning Component for Bill Insights
+### Create Lightning Component for Bill Insights
 
-#### HTML Template:
+#### HTML Template
 ```html
 <!-- energyBillInsights.html -->
 <template>
@@ -597,7 +455,7 @@ public class EnergyPredictionService {
 </template>
 ```
 
-#### JavaScript Controller:
+#### JavaScript Controller
 ```javascript
 // energyBillInsights.js
 import { LightningElement, api, wire } from 'lwc';
@@ -703,7 +561,7 @@ export default class EnergyBillInsights extends LightningElement {
 }
 ```
 
-#### CSS Styling:
+#### CSS Styling
 ```css
 /* energyBillInsights.css */
 .prediction-status {
@@ -727,7 +585,7 @@ export default class EnergyBillInsights extends LightningElement {
 }
 ```
 
-### 7.2 Create Apex Controller
+### Create Apex Controller
 
 ```apex
 public class EnergyReportController {
@@ -757,23 +615,11 @@ public class EnergyReportController {
 }
 ```
 
-### 7.3 Add Component to Energy Report Page
+## Monitoring & Maintenance
 
-1. **Navigate to Lightning App Builder**
-   - Go to **Setup** > **Lightning App Builder**
-   - Find your Energy Report page layout
-   - Click **Edit**
+### Model Performance Monitoring
 
-2. **Add Custom Component**
-   - Drag the **Energy Bill Insights** component to the page
-   - Position it prominently (e.g., top of the page)
-   - Save and activate the page
-
-## Monitoring and Maintenance
-
-### 8.1 Model Performance Monitoring
-
-#### Create Dashboard for Model Metrics:
+#### Create Dashboard for Model Metrics
 
 1. **Navigate to Reports & Dashboards**
    - Go to **Reports** > **New Report**
@@ -797,9 +643,9 @@ public class EnergyReportController {
    - **Table**: Top contributing factors
    - **Gauge**: Model performance score
 
-### 8.2 Automated Model Retraining
+### Automated Model Retraining
 
-#### Create Scheduled Job for Model Updates:
+#### Create Scheduled Job for Model Updates
 
 ```apex
 public class EinsteinModelRetrainScheduler implements Schedulable {
@@ -833,9 +679,9 @@ public class EinsteinModelRetrainScheduler implements Schedulable {
 }
 ```
 
-### 8.3 Data Quality Monitoring
+### Data Quality Monitoring
 
-#### Create Data Quality Validation:
+#### Create Data Quality Validation
 
 ```apex
 public class EnergyDataQualityMonitor {
@@ -910,7 +756,7 @@ public class EnergyDataQualityMonitor {
 
 ## Troubleshooting
 
-### 9.1 Common Issues and Solutions
+### Common Issues and Solutions
 
 #### Issue 1: Model Training Fails
 **Symptoms**: Model creation fails with insufficient data error
@@ -943,9 +789,9 @@ public class EnergyDataQualityMonitor {
 - Add more negative examples to training data
 - Implement business rules for validation
 
-### 9.2 Debugging Tools
+### Debugging Tools
 
-#### Create Debug Logging:
+#### Create Debug Logging
 
 ```apex
 public class EinsteinDebugLogger {
@@ -974,39 +820,3 @@ public class EinsteinDebugLogger {
     }
 }
 ```
-
-### 9.3 Support Resources
-
-1. **Einstein Discovery Documentation**
-   - [Einstein Discovery Guide](https://help.salesforce.com/articleView?id=einstein_discovery_overview.htm)
-   - [API Reference](https://developer.salesforce.com/docs/atlas.en-us.einstein_discovery_api.meta/einstein_discovery_api/)
-
-2. **Community Resources**
-   - [Einstein Discovery Trailhead](https://trailhead.salesforce.com/content/learn/modules/einstein_discovery)
-   - [Developer Forums](https://developer.salesforce.com/forums/)
-
-3. **Support Contacts**
-   - Salesforce Support: 1-800-NO-SOFTWARE
-   - Einstein Discovery Support: Available through Salesforce Premier Support
-
-## Conclusion
-
-This comprehensive guide provides everything needed to implement Einstein Discovery for energy bill prediction in your Salesforce org. The solution includes:
-
-- **Complete data model setup**
-- **Step-by-step Einstein Discovery configuration**
-- **Real-time prediction integration**
-- **Customer-facing insights**
-- **Monitoring and maintenance procedures**
-
-Follow this guide systematically to build a robust energy bill prediction system that provides valuable insights to your customers while maintaining high accuracy and performance.
-
-## Next Steps
-
-1. **Implement the data model** following Section 2
-2. **Set up Einstein Discovery** using Section 3-5
-3. **Deploy the prediction system** with Section 6
-4. **Add customer insights** using Section 7
-5. **Monitor and maintain** following Section 8
-
-For additional support or questions, refer to the troubleshooting section or contact your Salesforce administrator. 
