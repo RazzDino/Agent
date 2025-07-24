@@ -1,70 +1,3 @@
-# Einstein Discovery Setup Guide: Energy Bill Prediction
-
-This guide provides a complete step-by-step process for setting up Einstein Discovery in your Salesforce org to predict high energy bills and provide actionable insights to customers.
-
-## Table of Contents
-
-1. [Prerequisites](#prerequisites)
-2. [Data Model Setup](#data-model-setup)
-3. [Einstein Discovery Setup](#einstein-discovery-setup)
-4. [Data Preparation](#data-preparation)
-5. [Model Training](#model-training)
-6. [Model Deployment](#model-deployment)
-7. [Integration with Customer Experience](#integration-with-customer-experience)
-8. [Monitoring and Maintenance](#monitoring-and-maintenance)
-9. [Troubleshooting](#troubleshooting)
-
-## Prerequisites
-
-### 1.1 Salesforce Edition Requirements
-- **Salesforce Enterprise Edition or higher**
-- **Einstein Analytics Plus** or **Einstein Analytics Growth** license
-- **Einstein Discovery** add-on license
-
-### 1.2 User Permissions
-Ensure your user has the following permissions:
-- **Einstein Discovery User** permission set
-- **System Administrator** profile (for initial setup)
-- **Customize Application** permission
-- **Modify All Data** permission
-
-### 1.3 Data Requirements
-- Minimum 1,000 records for training
-- Historical data spanning at least 6 months
-- Clean, consistent data format
-- No missing critical values
-
-## Data Model Setup
-
-### 2.1 Create Custom Objects
-
-#### Energy_Report__c Object
-```xml
-<!-- Create this object in Setup > Object Manager > Create > Custom Object -->
-<CustomObject>
-    <label>Energy Report</label>
-    <pluralLabel>Energy Reports</pluralLabel>
-    <nameField>
-        <type>Text</type>
-        <label>Report Name</label>
-    </nameField>
-    <deploymentStatus>Deployed</deploymentStatus>
-    <enableActivities>true</enableActivities>
-    <enableBulkApi>true</enableBulkApi>
-    <enableFeeds>false</enableFeeds>
-    <enableHistory>true</enableHistory>
-    <enableLicensing>false</enableLicensing>
-    <enableReports>true</enableReports>
-    <enableSearch>true</enableSearch>
-    <enableSharing>true</enableSharing>
-    <enableStreamingApi>true</enableStreamingApi>
-    <externalSharingModel>Private</externalSharingModel>
-    <label>Energy Report</label>
-    <name>Energy_Report__c</name>
-    <pluralLabel>Energy Reports</pluralLabel>
-</CustomObject>
-```
-
 #### Required Fields for Energy_Report__c
 
 | Field Name | Field Type | Description | Required |
@@ -87,17 +20,6 @@ Ensure your user has the following permissions:
 | Top_Factor_3__c | Text(255) | Tertiary contributing factor | No |
 
 ### 2.2 Create Validation Rules
-
-#### Why Validation Rules Are Critical for Einstein Discovery
-
-Validation rules are essential for Einstein Discovery because:
-
-1. **Data Quality**: Poor quality data leads to inaccurate predictions
-2. **Model Performance**: Clean data improves model accuracy and reliability
-3. **Business Logic**: Ensures data follows business rules and constraints
-4. **Prevents Data Leakage**: Stops invalid data from corrupting the training dataset
-5. **Real-time Validation**: Catches errors before they affect predictions
-
 #### High Bill Threshold Rule
 ```apex
 // Validation Rule: High_Bill_Threshold_Validation
@@ -292,8 +214,6 @@ ISNULL(Account__c)
 #### Required Data Quality Checks:
 
 1. **Completeness Check**
-   ```sql
-   -- SOQL Query to check data completeness
    SELECT COUNT(Id), 
           COUNT(Monthly_Usage__c), 
           COUNT(Peak_Usage__c),
@@ -303,26 +223,6 @@ ISNULL(Account__c)
           COUNT(Current_Bill_Amount__c)
    FROM Energy_Report__c
    WHERE Report_Date__c >= LAST_N_MONTHS:6
-   ```
-
-2. **Outlier Detection**
-   ```sql
-   -- SOQL Query to identify outliers
-   SELECT Id, Account__c, Monthly_Usage__c, Current_Bill_Amount__c
-   FROM Energy_Report__c
-   WHERE Monthly_Usage__c > (
-       SELECT AVG(Monthly_Usage__c) + (2 * STDDEV(Monthly_Usage__c))
-       FROM Energy_Report__c
-   )
-   ```
-
-3. **Data Consistency Check**
-   ```sql
-   -- SOQL Query to check data consistency
-   SELECT Id, Peak_Usage__c, Off_Peak_Usage_kWh__c, Monthly_Usage__c
-   FROM Energy_Report__c
-   WHERE ABS((Peak_Usage__c + Off_Peak_Usage_kWh__c) - Monthly_Usage__c) > 0.01
-   ```
 
 ### 4.2 Data Cleaning Scripts
 
