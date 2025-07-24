@@ -73,7 +73,7 @@ Ensure your user has the following permissions:
 | Report_Date__c | Date | Date of the energy report | Yes |
 | Monthly_Usage__c | Number(10,2) | Total monthly energy usage in kWh | Yes |
 | Peak_Usage__c | Number(10,2) | Peak hours usage in kWh | Yes |
-| Off_Peak_Usage__c | Number(10,2) | Off-peak hours usage in kWh | Yes |
+| Off_Peak_Usage_kWh__c | Number(10,2) | Off-peak hours usage in kWh | Yes |
 | Appliance_Count__c | Number(3,0) | Number of appliances in use | Yes |
 | Previous_Bill_Amount__c | Currency(10,2) | Previous month's bill amount | Yes |
 | Current_Bill_Amount__c | Currency(10,2) | Current month's bill amount | Yes |
@@ -88,6 +88,16 @@ Ensure your user has the following permissions:
 
 ### 2.2 Create Validation Rules
 
+#### Why Validation Rules Are Critical for Einstein Discovery
+
+Validation rules are essential for Einstein Discovery because:
+
+1. **Data Quality**: Poor quality data leads to inaccurate predictions
+2. **Model Performance**: Clean data improves model accuracy and reliability
+3. **Business Logic**: Ensures data follows business rules and constraints
+4. **Prevents Data Leakage**: Stops invalid data from corrupting the training dataset
+5. **Real-time Validation**: Catches errors before they affect predictions
+
 #### High Bill Threshold Rule
 ```apex
 // Validation Rule: High_Bill_Threshold_Validation
@@ -101,6 +111,12 @@ AND(
 // Error Message: "Bill amount is 25% higher than previous month"
 ```
 
+**Why This Validation is Needed:**
+- **Prevents Data Anomalies**: Catches unusually high bills that might be data entry errors
+- **Business Logic**: Ensures bills follow expected patterns
+- **Model Training**: Helps identify genuine high bills vs. data errors
+- **Customer Experience**: Prevents false alarms to customers
+
 #### Usage Validation Rule
 ```apex
 // Validation Rule: Usage_Validation
@@ -108,12 +124,132 @@ AND(
 // Error Condition Formula:
 AND(
     NOT(ISNULL(Peak_Usage__c)),
-    NOT(ISNULL(Off_Peak_Usage__c)),
+    NOT(ISNULL(Off_Peak_Usage_kWh__c)),
     NOT(ISNULL(Monthly_Usage__c)),
-    ABS((Peak_Usage__c + Off_Peak_Usage__c) - Monthly_Usage__c) > 0.01
+    ABS((Peak_Usage__c + Off_Peak_Usage_kWh__c) - Monthly_Usage__c) > 0.01
 )
 // Error Message: "Peak + Off-peak usage must equal total monthly usage"
 ```
+
+**Why This Validation is Needed:**
+- **Mathematical Consistency**: Ensures peak + off-peak = total usage
+- **Data Integrity**: Prevents logical inconsistencies in energy data
+- **Model Accuracy**: Inconsistent data leads to poor predictions
+- **Audit Trail**: Maintains data quality for compliance
+
+#### Usage Range Validation
+```apex
+// Validation Rule: Usage_Range_Validation
+// Object: Energy_Report__c
+// Error Condition Formula:
+OR(
+    Monthly_Usage__c < 0,
+    Monthly_Usage__c > 10000,
+    Peak_Usage__c < 0,
+    Peak_Usage__c > 8000,
+    Off_Peak_Usage_kWh__c < 0,
+    Off_Peak_Usage_kWh__c > 5000
+)
+// Error Message: "Usage values must be within reasonable ranges (0-10,000 kWh total, 0-8,000 kWh peak, 0-5,000 kWh off-peak)"
+```
+
+**Why This Validation is Needed:**
+- **Prevents Outliers**: Stops unrealistic usage values from entering the system
+- **Model Stability**: Extreme values can skew predictions
+- **Business Reality**: Ensures data reflects real-world usage patterns
+- **Data Quality**: Maintains reasonable bounds for energy consumption
+
+#### Appliance Count Validation
+```apex
+// Validation Rule: Appliance_Count_Validation
+// Object: Energy_Report__c
+// Error Condition Formula:
+OR(
+    Appliance_Count__c < 1,
+    Appliance_Count__c > 50
+)
+// Error Message: "Appliance count must be between 1 and 50"
+```
+
+**Why This Validation is Needed:**
+- **Realistic Constraints**: Ensures appliance count is within reasonable limits
+- **Model Features**: Appliance count is a key predictor variable
+- **Data Quality**: Prevents impossible values from affecting predictions
+- **Business Logic**: Reflects typical household/business appliance counts
+
+#### Bill Amount Validation
+```apex
+// Validation Rule: Bill_Amount_Validation
+// Object: Energy_Report__c
+// Error Condition Formula:
+OR(
+    Current_Bill_Amount__c < 0,
+    Current_Bill_Amount__c > 5000,
+    Previous_Bill_Amount__c < 0,
+    Previous_Bill_Amount__c > 5000
+)
+// Error Message: "Bill amounts must be between $0 and $5,000"
+```
+
+**Why This Validation is Needed:**
+- **Financial Constraints**: Ensures bill amounts are within realistic ranges
+- **Target Variable**: Bill amounts are critical for prediction accuracy
+- **Data Quality**: Prevents negative or unrealistic bill values
+- **Business Rules**: Reflects typical energy bill ranges
+
+#### Weather Impact Validation
+```apex
+// Validation Rule: Weather_Impact_Validation
+// Object: Energy_Report__c
+// Error Condition Formula:
+AND(
+    NOT(ISNULL(Weather_Impact__c)),
+    OR(
+        Weather_Impact__c < 0,
+        Weather_Impact__c > 100
+    )
+)
+// Error Message: "Weather impact must be between 0 and 100"
+```
+
+**Why This Validation is Needed:**
+- **Scale Consistency**: Weather impact is a percentage (0-100)
+- **Model Features**: Weather impact influences energy consumption
+- **Data Quality**: Ensures weather data is properly normalized
+- **Business Logic**: Weather impact should be a percentage value
+
+#### Date Validation
+```apex
+// Validation Rule: Report_Date_Validation
+// Object: Energy_Report__c
+// Error Condition Formula:
+OR(
+    Report_Date__c > TODAY(),
+    Report_Date__c < DATE(2020, 1, 1)
+)
+// Error Message: "Report date must be between January 1, 2020 and today"
+```
+
+**Why This Validation is Needed:**
+- **Temporal Logic**: Prevents future dates and very old dates
+- **Data Relevance**: Ensures data is current and relevant
+- **Model Training**: Recent data is more valuable for predictions
+- **Business Continuity**: Maintains data timeline integrity
+
+#### Account Relationship Validation
+```apex
+// Validation Rule: Account_Relationship_Validation
+// Object: Energy_Report__c
+// Error Condition Formula:
+ISNULL(Account__c)
+// Error Message: "Energy report must be associated with a customer account"
+```
+
+**Why This Validation is Needed:**
+- **Data Relationships**: Ensures proper customer association
+- **Business Logic**: Energy reports must belong to customers
+- **Reporting**: Enables customer-specific analysis
+- **Model Context**: Customer data provides important context for predictions
 
 ## Einstein Discovery Setup
 
@@ -161,7 +297,7 @@ AND(
    SELECT COUNT(Id), 
           COUNT(Monthly_Usage__c), 
           COUNT(Peak_Usage__c),
-          COUNT(Off_Peak_Usage__c),
+          COUNT(Off_Peak_Usage_kWh__c),
           COUNT(Appliance_Count__c),
           COUNT(Previous_Bill_Amount__c),
           COUNT(Current_Bill_Amount__c)
@@ -183,9 +319,9 @@ AND(
 3. **Data Consistency Check**
    ```sql
    -- SOQL Query to check data consistency
-   SELECT Id, Peak_Usage__c, Off_Peak_Usage__c, Monthly_Usage__c
+   SELECT Id, Peak_Usage__c, Off_Peak_Usage_kWh__c, Monthly_Usage__c
    FROM Energy_Report__c
-   WHERE ABS((Peak_Usage__c + Off_Peak_Usage__c) - Monthly_Usage__c) > 0.01
+   WHERE ABS((Peak_Usage__c + Off_Peak_Usage_kWh__c) - Monthly_Usage__c) > 0.01
    ```
 
 ### 4.2 Data Cleaning Scripts
@@ -255,7 +391,7 @@ public class EnergyTestDataGenerator {
                     Report_Date__c = Date.today().addMonths(-i),
                     Monthly_Usage__c = Math.random() * 1000 + 200,
                     Peak_Usage__c = Math.random() * 600 + 100,
-                    Off_Peak_Usage__c = Math.random() * 400 + 100,
+                    Off_Peak_Usage_kWh__c = Math.random() * 400 + 100,
                     Appliance_Count__c = Math.round(Math.random() * 15) + 5,
                     Previous_Bill_Amount__c = Math.random() * 200 + 50,
                     Current_Bill_Amount__c = Math.random() * 300 + 50,
@@ -293,7 +429,7 @@ public class EnergyTestDataGenerator {
    - **Primary Fields**:
      - `Monthly_Usage__c`
      - `Peak_Usage__c`
-     - `Off_Peak_Usage__c`
+     - `Off_Peak_Usage_kWh__c`
      - `Appliance_Count__c`
      - `Previous_Bill_Amount__c`
      - `Weather_Impact__c`
@@ -392,7 +528,7 @@ public class EnergyTestDataGenerator {
    - **Entry Conditions**: 
      - `Monthly_Usage__c` is not null
      - `Peak_Usage__c` is not null
-     - `Off_Peak_Usage__c` is not null
+     - `Off_Peak_Usage_kWh__c` is not null
 
 3. **Add Einstein Prediction Element**
    - **Element Type**: Einstein Prediction
@@ -418,7 +554,7 @@ trigger EnergyReportTrigger on Energy_Report__c (after insert, after update) {
                 // Check if required fields are populated
                 if(report.Monthly_Usage__c != null && 
                    report.Peak_Usage__c != null && 
-                   report.Off_Peak_Usage__c != null &&
+                   report.Off_Peak_Usage_kWh__c != null &&
                    report.Appliance_Count__c != null &&
                    report.Previous_Bill_Amount__c != null) {
                     reportsForPrediction.add(report);
@@ -442,7 +578,7 @@ public class EnergyPredictionService {
     @future(callout=true)
     public static void predictBills(List<Id> reportIds) {
         List<Energy_Report__c> reports = [
-            SELECT Id, Monthly_Usage__c, Peak_Usage__c, Off_Peak_Usage__c,
+            SELECT Id, Monthly_Usage__c, Peak_Usage__c, Off_Peak_Usage_kWh__c,
                    Appliance_Count__c, Previous_Bill_Amount__c, Weather_Impact__c,
                    Recommendation_Adopted__c
             FROM Energy_Report__c
@@ -700,7 +836,7 @@ public class EnergyReportController {
     public static Energy_Report__c getEnergyReport(Id recordId) {
         return [
             SELECT Id, Name, Account__c, Report_Date__c,
-                   Monthly_Usage__c, Peak_Usage__c, Off_Peak_Usage__c,
+                   Monthly_Usage__c, Peak_Usage__c, Off_Peak_Usage_kWh__c,
                    Appliance_Count__c, Previous_Bill_Amount__c, Current_Bill_Amount__c,
                    Weather_Impact__c, Recommendation_Adopted__c,
                    High_Bill_Flag__c, Prediction_Confidence__c,
@@ -811,7 +947,7 @@ public class EnergyDataQualityMonitor {
             FROM Energy_Report__c
             WHERE Monthly_Usage__c = null
             OR Peak_Usage__c = null
-            OR Off_Peak_Usage__c = null
+            OR Off_Peak_Usage_kWh__c = null
             OR Appliance_Count__c = null
             OR Previous_Bill_Amount__c = null
         ];
